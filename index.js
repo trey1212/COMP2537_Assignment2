@@ -36,7 +36,7 @@ app.set('view engine', 'ejs');
 app.use(express.urlencoded({extended: false}));
 
 var mongoStore = MongoStore.create({
-	mongoUrl: `mongodb+srv://${mongodb_user}:${mongodb_password}@${mongodb_host}/sessions`,
+	mongoUrl: `mongodb+srv://${mongodb_user}:${mongodb_password}@${mongodb_host}/?retryWrites=true&w=majority&tls=true`,
 	crypto: {
 		secret: mongodb_session_secret
 	}
@@ -77,7 +77,7 @@ function isAdmin(req) {
 function adminAuthorization(req, res, next) {
     if (!isAdmin(req)) {
         res.status(403);
-        res.render("errorMessage", {error: "Not Authorized"});
+        res.render("errorMessage", {error: "Not Authorized", navLinks: navLinks});
         return;
     }
     else {
@@ -85,8 +85,16 @@ function adminAuthorization(req, res, next) {
     }
 }
 
+const navLinks = [
+	{name: "Home", link: "/"},
+	{name: "About", link: "/about"},
+	{name: "Contact", link: "/contact"},
+	{name: "Admin", link: "/admin"},
+	{name: "404", link: "/dne"}
+]
+
 app.get('/', (req,res) => {
-    res.render("index");
+    res.render("index", {navLinks: navLinks});
 });
 
 app.get('/nosql-injection', async (req,res) => {
@@ -122,13 +130,13 @@ app.get('/nosql-injection', async (req,res) => {
 app.get('/about', (req,res) => {
     var color = req.query.color;
 
-    res.render("about", {color: color});
+    res.render("about", {color: color, navLinks: navLinks});
 });
 
 app.get('/contact', (req,res) => {
     var missingEmail = req.query.missing;
 
-    res.render("contact", {missing: missingEmail});
+    res.render("contact", {missing: missingEmail, navLinks: navLinks});
 });
 
 app.post('/submitEmail', (req,res) => {
@@ -148,7 +156,7 @@ app.get('/createUser', (req,res) => {
 
 
 app.get('/login', (req,res) => {
-    res.render("login");
+    res.render("login", {navLinks: navLinks});
 });
 
 app.post('/submitUser', async (req,res) => {
@@ -178,18 +186,18 @@ app.post('/submitUser', async (req,res) => {
 });
 
 app.post('/loggingin', async (req,res) => {
-    var username = req.body.username;
+    var email = req.body.email;
     var password = req.body.password;
 
-	const schema = Joi.string().max(20).required();
-	const validationResult = schema.validate(username);
+	const schema = Joi.string().max(50).required();
+	const validationResult = schema.validate(email);
 	if (validationResult.error != null) {
 	   console.log(validationResult.error);
 	   res.redirect("/login");
 	   return;
 	}
 
-	const result = await userCollection.find({username: username}).project({username: 1, password: 1, user_type: 1, _id: 1}).toArray();
+	const result = await userCollection.find({email: email}).project({username: 1, password: 1, user_type: 1, _id: 1}).toArray();
 
 	console.log(result);
 	if (result.length != 1) {
@@ -200,11 +208,11 @@ app.post('/loggingin', async (req,res) => {
 	if (await bcrypt.compare(password, result[0].password)) {
 		console.log("correct password");
 		req.session.authenticated = true;
-		req.session.username = username;
+		req.session.email = email;
         req.session.user_type = result[0].user_type;
 		req.session.cookie.maxAge = expireTime;
 
-		res.redirect('/loggedIn');
+		res.redirect('/members');
 		return;
 	}
 	else {
@@ -215,11 +223,11 @@ app.post('/loggingin', async (req,res) => {
 });
 
 app.use('/loggedin', sessionValidation);
-app.get('/loggedin', (req,res) => {
+app.get('/members', (req,res) => {
     if (!req.session.authenticated) {
         res.redirect('/login');
     }
-    res.render("loggedin");
+    res.render("members", {email: req.session.email, user_type: req.session.user_type, navLinks: navLinks});
 });
 
 app.get('/loggedin/info', (req,res) => {
@@ -235,21 +243,21 @@ app.get('/logout', (req,res) => {
 app.get('/cat/:id', (req,res) => {
     var cat = req.params.id;
 
-    res.render("cat", {cat: cat});
+    res.render("cat", {cat: cat}, {navLinks: navLinks});
 });
 
 
 app.get('/admin', sessionValidation, adminAuthorization, async (req,res) => {
     const result = await userCollection.find().project({username: 1, _id: 1}).toArray();
  
-    res.render("admin", {users: result});
+    res.render("admin", {users: result, navLinks: navLinks});
 });
 
 app.use(express.static(__dirname + "/public"));
 
 app.get("*", (req,res) => {
 	res.status(404);
-	res.render("404");
+	res.render("404", {navLinks: navLinks});
 })
 
 app.listen(port, () => {
