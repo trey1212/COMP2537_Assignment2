@@ -14,7 +14,19 @@
     <ul class="nav">
         <% for(var i=0; i<navLinks.length; i++) { %>
         <li class="nav-item">
-            <a href="<%= navLinks[i].link %>" class="nav-link " aria-current="page" href="#"><%= navLinks[i].name %></a>
+            <a href="<%= navLinks[i].link %>" 
+               class="nav-link <%= navLinks[i].link === currentPath ? 'active' : '' %>" 
+               aria-current="page" 
+               style="<%= navLinks[i].link === currentPath ? 'background-color: #d3d3d3;' : '' %>">
+               <%= navLinks[i].name %>
+            </a>
+        </li>
+        <% } %>
+        <% if (isAuthenticated) { %> <!-- Show logout button if the user is logged in -->
+        <li class="nav-item">
+            <form action='/logout' method='get' class="d-inline">
+                <button class="btn nav-link text-danger" style="border: none; background: none;">Logout</button>
+            </form>
         </li>
         <% } %>
     </ul>

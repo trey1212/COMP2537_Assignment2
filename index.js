@@ -66,6 +66,19 @@ function sessionValidation(req,res,next) {
     }
 }
 
+app.use((req, res, next) => {
+	res.locals.navLinks = [
+		{name: "Home", link: "/members"},
+		{name: "About", link: "/about"},
+		{name: "Contact", link: "/contact"},
+		{name: "Admin", link: "/admin"},
+		{name: "404", link: "/dne"}
+    ];
+
+    res.locals.isAuthenticated = req.session?.authenticated || false; // Set isAuthenticated for all templates
+	res.locals.currentPath = req.path; // Set currentPath globally
+    next();
+});
 
 function isAdmin(req) {
     if (req.session.user_type == 'admin') {
@@ -86,7 +99,7 @@ function adminAuthorization(req, res, next) {
 }
 
 const navLinks = [
-	{name: "Home", link: "/"},
+	{name: "Home", link: "/members"},
 	{name: "About", link: "/about"},
 	{name: "Contact", link: "/contact"},
 	{name: "Admin", link: "/admin"},
@@ -168,7 +181,13 @@ app.get('/createUser', (req,res) => {
 
 
 app.get('/login', (req,res) => {
-    res.render("login", {navLinks: navLinks});
+    if (req.session.authenticated) {
+        // If the user is already logged in, redirect to /members
+        res.redirect('/members');
+        return;
+    }
+    // Otherwise, render the login page
+    res.render("login", { navLinks: navLinks });
 });
 
 app.post('/submitUser', async (req,res) => {
@@ -228,6 +247,7 @@ app.post('/loggingin', async (req,res) => {
 		console.log("correct password");
 		req.session.authenticated = true;
 		req.session.email = email;
+		req.session.username = result[0].username;
         req.session.user_type = result[0].user_type;
 		req.session.cookie.maxAge = expireTime;
 
@@ -245,8 +265,10 @@ app.use('/loggedin', sessionValidation);
 app.get('/members', (req,res) => {
     if (!req.session.authenticated) {
         res.redirect('/login');
+		return;
     }
-    res.render("members", {email: req.session.email, user_type: req.session.user_type, navLinks: navLinks, images: images});
+	console.log("Username:", req.session.username);
+    res.render("members", {email: req.session.email, user_type: req.session.user_type, username: req.session.username, isAuthenticated: req.session.authenticated, navLinks: navLinks, images: images});
 });
 
 app.get('/loggedin/info', (req,res) => {
@@ -255,7 +277,7 @@ app.get('/loggedin/info', (req,res) => {
 
 app.get('/logout', (req,res) => {
 	req.session.destroy();
-    res.render("loggedout");
+    res.redirect('/');
 });
 
 
@@ -267,9 +289,53 @@ app.get('/cat/:id', (req,res) => {
 
 
 app.get('/admin', sessionValidation, adminAuthorization, async (req,res) => {
-    const result = await userCollection.find().project({username: 1, _id: 1}).toArray();
+    const result = await userCollection.find().project({username: 1, user_type:1, _id: 1}).toArray();
  
     res.render("admin", {users: result, navLinks: navLinks});
+});
+
+app.post('/admin/promote', sessionValidation, adminAuthorization, async (req, res) => {
+    const username = req.body.username;
+
+    if (!username) {
+        res.status(400).send("Username is required");
+        return;
+    }
+
+    const result = await userCollection.updateOne(
+        { username: username },
+        { $set: { user_type: "admin" } }
+    );
+
+    if (result.matchedCount === 0) {
+        res.status(404).send("User not found");
+        return;
+    }
+
+    console.log(`User ${username} promoted to admin`);
+    res.redirect('/admin');
+});
+
+app.post('/admin/demote', sessionValidation, adminAuthorization, async (req, res) => {
+    const username = req.body.username;
+
+    if (!username) {
+        res.status(400).send("Username is required");
+        return;
+    }
+
+    const result = await userCollection.updateOne(
+        { username: username },
+        { $set: { user_type: "user" } }
+    );
+
+    if (result.matchedCount === 0) {
+        res.status(404).send("User not found");
+        return;
+    }
+
+    console.log(`User ${username} demoted to user`);
+    res.redirect('/admin');
 });
 
 app.use(express.static(__dirname + "/public"));
