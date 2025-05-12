@@ -93,6 +93,18 @@ const navLinks = [
 	{name: "404", link: "/dne"}
 ]
 
+const images = [
+        '/fluffy.gif',
+        '/socks.gif',
+        '/yippee.gif',
+        '/chipichapa.gif',
+        '/huh.gif',
+        '/omg.gif',
+        '/wtf.gif',
+        '/laugh.gif',
+        '/NOO.gif'
+    ];
+
 app.get('/', (req,res) => {
     res.render("index", {navLinks: navLinks});
 });
@@ -151,7 +163,7 @@ app.post('/submitEmail', (req,res) => {
 
 
 app.get('/createUser', (req,res) => {
-    res.render("createUser");
+    res.render("createUser", {navLinks: navLinks});
 });
 
 
@@ -161,15 +173,17 @@ app.get('/login', (req,res) => {
 
 app.post('/submitUser', async (req,res) => {
     var username = req.body.username;
+    var email = req.body.email;
     var password = req.body.password;
 
 	const schema = Joi.object(
 		{
 			username: Joi.string().alphanum().max(20).required(),
+            email: Joi.string().email().max(50).required(),
 			password: Joi.string().max(20).required()
 		});
 	
-	const validationResult = schema.validate({username, password});
+	const validationResult = schema.validate({username, email, password});
 	if (validationResult.error != null) {
 	   console.log(validationResult.error);
 	   res.redirect("/createUser");
@@ -178,11 +192,16 @@ app.post('/submitUser', async (req,res) => {
 
     var hashedPassword = await bcrypt.hash(password, saltRounds);
 	
-	await userCollection.insertOne({username: username, password: hashedPassword, user_type: "user"});
+	await userCollection.insertOne({username: username, email: email, password: hashedPassword, user_type: "user"});
 	console.log("Inserted user");
+	
+	req.session.authenticated = true;
+    req.session.email = email;
+    req.session.username = username;
+    req.session.cookie.maxAge = expireTime;
 
     var html = "successfully created user";
-    res.render("submitUser", {html: html});
+    res.redirect('/members');
 });
 
 app.post('/loggingin', async (req,res) => {
@@ -227,7 +246,7 @@ app.get('/members', (req,res) => {
     if (!req.session.authenticated) {
         res.redirect('/login');
     }
-    res.render("members", {email: req.session.email, user_type: req.session.user_type, navLinks: navLinks});
+    res.render("members", {email: req.session.email, user_type: req.session.user_type, navLinks: navLinks, images: images});
 });
 
 app.get('/loggedin/info', (req,res) => {
