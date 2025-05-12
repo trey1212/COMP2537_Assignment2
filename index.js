@@ -68,7 +68,7 @@ function sessionValidation(req,res,next) {
 
 app.use((req, res, next) => {
 	res.locals.navLinks = [
-		{name: "Home", link: "/members"},
+		{name: "Members", link: "/members"},
 		{name: "About", link: "/about"},
 		{name: "Contact", link: "/contact"},
 		{name: "Admin", link: "/admin"},
@@ -99,7 +99,7 @@ function adminAuthorization(req, res, next) {
 }
 
 const navLinks = [
-	{name: "Home", link: "/members"},
+	{name: "Members", link: "/members"},
 	{name: "About", link: "/about"},
 	{name: "Contact", link: "/contact"},
 	{name: "Admin", link: "/admin"},

@@ -1,9 +1,25 @@
 <%- include("templates/header") %> 
-	<div>Users:</div>
-    <ul>
-        <% let i=0; %>
-		<% for(i=0; i < users.length; i++) { %>
-        <%- include('templates/user', {user: users[i]})  %> 
-        <% } %> 
-    </ul>
+	<div class="container mt-5">
+    <h2 class="text-center mb-4">Admin Panel</h2>
+    <div class="row">
+        <% for (let i = 0; i < users.length; i++) { %>
+        <div class="col-12 mb-3">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
+                <span><strong>Username:</strong> <%= users[i].username %></span>
+                <span><strong>Role:</strong> <%= users[i].user_type %></span>
+                <div>
+                    <form action="/admin/promote" method="post" class="d-inline">
+                        <input type="hidden" name="username" value="<%= users[i].username %>">
+                        <button type="submit" class="btn btn-danger btn-sm">Promote</button>
+                    </form>
+                    <form action="/admin/demote" method="post" class="d-inline">
+                        <input type="hidden" name="username" value="<%= users[i].username %>">
+                        <button type="submit" class="btn btn-success btn-sm">Demote</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <% } %>
+    </div>
+</div>
 <%- include("templates/footer") %> 

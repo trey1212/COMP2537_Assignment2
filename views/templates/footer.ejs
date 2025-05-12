@@ -13,11 +13,13 @@
       <div class="col-md-4 mb-3">
         <h5>Quick Links</h5>
         <ul class="list-unstyled">
-          <li><a href="#" class="text-white text-decoration-none">Home</a></li>
-          <li><a href="#" class="text-white text-decoration-none">Cats</a></li>
-          <li><a href="#" class="text-white text-decoration-none">Login</a></li>
-          <li><a href="#" class="text-white text-decoration-none">Admin</a></li>
-          <li><a href="#" class="text-white text-decoration-none">404</a></li>
+           <% navLinks.forEach(function(navLink) { %>
+      <li class="nav-item">
+        <a href="<%= navLink.link %>" class="nav-link text-white text-decoration-none">
+          <%= navLink.name %>
+        </a>
+      </li>
+    <% }); %>
         </ul>
       </div>
 

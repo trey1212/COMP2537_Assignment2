@@ -1,9 +1,11 @@
 <%- include("templates/header") %> 
-    <form action='/login' method='get'>
-            <button>Login</button>
+<div class="container text-center mt-5 pb-5" style="height: 290px;">
+    <form action='/login' method='get' class="mb-3">
+        <button class="btn btn-primary w-50">Login</button>
     </form>
 
     <form action='/createUser' method='get'>
-        <button>Signup</button>
+        <button class="btn btn-secondary w-50">Signup</button>
     </form>
+</div>
 <%- include("templates/footer") %> 
